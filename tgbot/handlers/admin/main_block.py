@@ -63,7 +63,7 @@ async def main_block(message: Message, state: FSMContext):
     file_name = f"{os.getcwd()}/data.xlsx"
     await bot.download(file=message.document, destination=file_name)
     file_data = await xlsx_parser(file=file_name)
-    await message.answer("Ожидайте... ⏳")
+    wait_msg = await message.answer("Ожидайте... ⏳")
     text = [f"Результаты клонирования:\n{'-' * 15}"]
     item_list = []
     for row in file_data:
@@ -91,4 +91,5 @@ async def main_block(message: Message, state: FSMContext):
     kb = inline.home_kb()
     os.remove(file_name)
     await state.set_state(AdminFSM.home)
+    await wait_msg.delete()
     await message.answer("\n".join(text), reply_markup=kb)
