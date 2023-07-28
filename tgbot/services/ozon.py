@@ -22,9 +22,7 @@ class OzonAPI:
     async def __request(self, url: str, data: dict):
         async with aiohttp.ClientSession() as session:
             async with session.post(url=url, headers=self.headers, data=data) as resp:
-                result = await resp.text()
-        print(result)
-        return await resp.json()
+                return await resp.json()
 
     async def clone_card(self, item_list: list) -> list:
         url = "https://api-seller.ozon.ru/v1/product/import-by-sku"

@@ -63,6 +63,7 @@ async def main_block(message: Message, state: FSMContext):
     file_name = f"{os.getcwd()}/data.xlsx"
     await bot.download(file=message.document, destination=file_name)
     file_data = await xlsx_parser(file=file_name)
+    await message.answer("Ожидайте... ⏳")
     text = [f"Результаты клонирования:\n{'-' * 15}"]
     item_list = []
     for row in file_data:
@@ -73,7 +74,6 @@ async def main_block(message: Message, state: FSMContext):
                         price=price)
             item_list.append(item)
     errors_list = await ozon_api.clone_card(item_list=item_list)
-    print(errors_list)
     for row in file_data:
         if row:
             offer_id = f"РСВ-{row[1]}РСВ-{row[1]}"
