@@ -7,11 +7,11 @@ from tgbot.config import Config
 
 
 class AdminFilter(BaseFilter):
-    is_root: bool = True
+    is_admin: bool = True
 
     async def __call__(self, obj: Union[Message, CallbackQuery], config: Config) -> bool:
         if isinstance(obj, Message):
-            var = obj.chat.id
+            var = str(obj.chat.id)
         else:
-            var = obj.message.chat.id
-        return (var in config.tg_bot.admin_ids) == self.is_root
+            var = str(obj.message.chat.id)
+        return (var in config.tg_bot.admin_group) == self.is_admin

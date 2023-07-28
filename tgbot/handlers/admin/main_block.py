@@ -5,7 +5,7 @@ from aiogram.types import Message, CallbackQuery, FSInputFile
 from aiogram.filters import Command
 from aiogram import F, Router
 
-from create_bot import bot
+from create_bot import bot, config
 from .filters import AdminFilter
 from .inline import AdminInlineKeyboard
 from tgbot.misc.states import AdminFSM
@@ -20,42 +20,69 @@ inline = AdminInlineKeyboard()
 
 ozon_api = OzonAPI()
 
-@router.message(Command("test"))
-async def test(message: Message):
-    await ozon_api.clone_status(task_id=int(784510898))
+admin_group = config.tg_bot.admin_group
 
 
-async def main_screen_render(user_id: int | str, start: bool):
+async def main_screen_render(start: bool):
     if start:
         text = "Это главный экран бота. Чтобы скопировать карточки товаров, нажмите на клавишу нижу 👇"
     else:
         text = "ГЛАВНОЕ МЕНЮ"
     kb = inline.main_menu_kb()
-    await bot.send_message(chat_id=user_id, text=text, reply_markup=kb)
+    await bot.send_message(chat_id=admin_group, text=text, reply_markup=kb)
 
 
 @router.message(Command("start"))
 async def main_block(message: Message, state: FSMContext):
     await state.set_state(AdminFSM.home)
-    await main_screen_render(user_id=message.from_user.id, start=True)
+    await main_screen_render(start=True)
 
 
 @router.callback_query(F.data == "home")
 async def main_block(callback: CallbackQuery, state: FSMContext):
     await state.set_state(AdminFSM.home)
-    await main_screen_render(user_id=callback.from_user.id, start=False)
+    await main_screen_render(start=False)
     await bot.answer_callback_query(callback.id)
+
+
+# @router.callback_query(F.data == "clone")
+# async def main_block(callback: CallbackQuery, state: FSMContext):
+#     file_name = f'{os.getcwd()}/template.xlsx'
+#     file = FSInputFile(path=file_name, filename=file_name)
+#     text = "Заполните шаблон ссылками и загрузите в бот"
+#     kb = inline.home_kb()
+#     await state.set_state(AdminFSM.get_data)
+#     await callback.message.answer_document(document=file, caption=text, reply_markup=kb)
+#     await bot.answer_callback_query(callback.id)
 
 
 @router.callback_query(F.data == "clone")
 async def main_block(callback: CallbackQuery, state: FSMContext):
+    text = "Введите ClientID аккаунта"
+    kb = inline.home_kb()
+    await state.set_state(AdminFSM.client_id)
+    await callback.message.answer(text, reply_markup=kb)
+    await bot.answer_callback_query(callback.id)
+
+
+@router.message(F.text, AdminFSM.client_id)
+async def main_block(message: Message, state: FSMContext):
+    text = "Введите токен"
+    kb = inline.home_kb()
+    await state.update_data(client_id=message.text.strip())
+    await state.set_state(AdminFSM.api_token)
+    await message.answer(text, reply_markup=kb)
+
+
+@router.message(F.text, AdminFSM.api_token)
+async def main_block(message: Message, state: FSMContext):
     file_name = f'{os.getcwd()}/template.xlsx'
     file = FSInputFile(path=file_name, filename=file_name)
     text = "Заполните шаблон ссылками и загрузите в бот"
     kb = inline.home_kb()
+    await state.update_data(ozon_token=message.text.strip())
     await state.set_state(AdminFSM.get_data)
-    await callback.message.answer_document(document=file, caption=text, reply_markup=kb)
-    await bot.answer_callback_query(callback.id)
+    await message.answer_document(document=file, caption=text, reply_markup=kb)
 
 
 @router.message(F.document, AdminFSM.get_data)
@@ -63,8 +90,10 @@ async def main_block(message: Message, state: FSMContext):
     file_name = f"{os.getcwd()}/data.xlsx"
     await bot.download(file=message.document, destination=file_name)
     file_data = await xlsx_parser(file=file_name)
+    state_data = await state.get_data()
+    ozon_token = state_data["ozon_token"]
+    client_id = state_data["client_id"]
     wait_msg = await message.answer("Ожидайте... ⏳")
-    text = [f"Результаты клонирования:\n{'-' * 15}"]
     item_list = []
     for row in file_data:
         if row:
@@ -73,7 +102,8 @@ async def main_block(message: Message, state: FSMContext):
                         art=row[1],
                         price=price)
             item_list.append(item)
-    errors_list = await ozon_api.clone_card(item_list=item_list)
+    errors_list = await ozon_api.clone_card(item_list=item_list, ozon_token=ozon_token, client_id=client_id)
+    text = [f"Результаты клонирования:\n{'-' * 15}"]
     for row in file_data:
         if row:
             offer_id = f"РСВ-{row[1]}РСВ-{row[1]}"
