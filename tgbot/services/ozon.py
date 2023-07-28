@@ -5,10 +5,8 @@ import aiohttp
 
 from create_bot import config
 
-# ozon_token = config.misc.ozon_token
-# ozon_client_id = config.misc.ozon_client_id
-ozon_token = "16116336-c3e7-4bbf-a21d-088e9fe5e5e6"
-ozon_client_id = "855070"
+ozon_token = config.misc.ozon_token
+ozon_client_id = config.misc.ozon_client_id
 
 
 class OzonAPI:
