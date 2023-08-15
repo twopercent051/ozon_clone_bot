@@ -9,7 +9,8 @@ async def xlsx_parser(file: str):
         try:
             ozon_id = row[0].value.split("/")[4].split("-")[-1]
             orecht_id = row[1].value.split("=")[-1]
-            result.append((ozon_id, orecht_id))
+            ozon_url = row[0].value
+            result.append((ozon_id, orecht_id, ozon_url))
         except (AttributeError, Exception):
             result.append(None)
     return result

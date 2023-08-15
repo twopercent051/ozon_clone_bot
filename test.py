@@ -1,5 +1,5 @@
-a = "https://www.ozon.ru/product/polovnik-glubokiy-nerzhaveyushchaya-stal-alfa-308701965/?avtc=1&avte=2&avts=1690429904&sh=DnIuHqqTnw"
+a = [{"a": 1}, {"a": 2}, {"a": 3}]
 
-ozon_id = a.split("/")[4].split("-")[-1]
+b = [i["a"] for i in a]
 
-print(ozon_id)
+print(b)
