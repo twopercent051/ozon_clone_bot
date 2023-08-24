@@ -85,6 +85,9 @@ async def main_block(message: Message, state: FSMContext):
     state_data = await state.get_data()
     ozon_token = state_data["ozon_token"]
     client_id = state_data["client_id"]
+    if len(file_data) == 0:
+        await message.answer("Лист не должен быть пустым")
+        return
     await message.answer("Ожидайте... ⏳")
     item_list = []
     for row in file_data:
@@ -110,8 +113,10 @@ async def main_block(message: Message, state: FSMContext):
     counter = 0
     for offer_id in offer_ids:
         try:
-            oreht_data = await get_card_info(item_art=offer_id)
-            # offer_data = list(filter(lambda x: x["art"] == offer_id.split("-")[-1], item_list))
+            oreht_data = await get_card_info(item_art=offer_id.split("-")[-1])
+            if not oreht_data:
+                await message.answer("Неправильная ссылка в Oreht")
+                continue
             card_attrs = await ozon_api.get_card_attrs(offer_id=offer_id, ozon_token=ozon_token, client_id=client_id)
             time.sleep(9)
             await ozon_api.delete_cards(item_list=offer_ids, ozon_token=ozon_token, client_id=client_id)
@@ -126,7 +131,7 @@ async def main_block(message: Message, state: FSMContext):
             else:
                 await message.answer(f"{offer_id} не найден")
         except Exception as ex:
-            await message.answer(f"{offer_id} error: {ex}")
+            await message.answer(f"{offer_id} error: {ex.__traceback__.tb_frame} {ex.__traceback__.tb_lineno}")
 
     os.remove(file_name)
     await state.set_state(AdminFSM.home)

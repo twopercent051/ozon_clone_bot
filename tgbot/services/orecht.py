@@ -25,6 +25,11 @@ async def get_card_info(item_art: str):
         price = soup.find(class_='mg-price').text.replace(',', '.').replace('\n', '')
         image = soup.find(class_="mg-glimage").find("img").get("src").strip()
         result = dict(price=int(float(price)), image=f"https://www.oreht.ru/{image}")
+        print(result)
         return result
-    except:
+    except AttributeError:
         return None
+
+
+if __name__ == "__main__":
+    asyncio.run(get_card_info(item_art="25241574839024skljbedbe"))
