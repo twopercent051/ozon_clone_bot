@@ -32,7 +32,7 @@ async def main_screen_render(start: bool, user_id: int | str):
     else:
         text = "ГЛАВНОЕ МЕНЮ"
     kb = inline.main_menu_kb()
-    await bot.send_message(chat_id=user_id, text=text, reply_markup=kb)
+    await bot.send_message(chat_id=admin_group, text=text, reply_markup=kb)
 
 
 @router.message(Command("start"))
