@@ -101,17 +101,18 @@ async def main_block(message: Message, state: FSMContext):
     kb = inline.home_kb()
     await asyncio.sleep(1)
     if len(clone_result) > 0:
-        text = f"{len(clone_result)} товаров скопированы с ошибками. Запускается парсер\n<u>Внимание! процесс может " \
-               f"занять длительное время. Пожалуйста, не прерывайте работу бота</u>"
+        text = f"{len(clone_result)} / {len(file_data)} товаров скопированы с ошибками. Запускается " \
+               f"парсер\n<u>Внимание! процесс может занять длительное время. Пожалуйста, не прерывайте работу бота</u>"
         await message.answer(text)
     else:
         await message.answer("✅ Все товары скопированы", reply_markup=kb)
         return
-    offer_ids = [i["offer_id"] for i in clone_result]
-    print(clone_result)
-    count_msg = await message.answer(f"Принудительно скопировано 0 / {len(offer_ids)} товаров")
+    error_items = [dict(offer_id=i["offer_id"], product_id=i["product_id"]) for i in clone_result]
+    count_msg = await message.answer(f"Принудительно скопировано 0 / {len(error_items)} товаров")
     counter = 0
-    for offer_id in offer_ids:
+    for item in error_items:
+        offer_id = item["offer_id"]
+        product_id = item["product_id"]
         try:
             oreht_data = await get_card_info(item_art=offer_id.split("-")[-1])
             if not oreht_data:
@@ -119,7 +120,10 @@ async def main_block(message: Message, state: FSMContext):
                 continue
             card_attrs = await ozon_api.get_card_attrs(offer_id=offer_id, ozon_token=ozon_token, client_id=client_id)
             time.sleep(9)
-            await ozon_api.delete_cards(item_list=offer_ids, ozon_token=ozon_token, client_id=client_id)
+            await ozon_api.delete_cards(ozon_token=ozon_token,
+                                        client_id=client_id,
+                                        archive_item_list=[product_id],
+                                        delete_item_list=[{"offer_id": offer_id}])
             result = await ozon_api.create_card(income_data=card_attrs,
                                                 image=oreht_data["image"],
                                                 price=str(2000),
@@ -127,11 +131,11 @@ async def main_block(message: Message, state: FSMContext):
                                                 client_id=client_id)
             if result:
                 counter += 1
-                await count_msg.edit_text(f"Принудительно скопировано {counter} / {len(offer_ids)} товаров")
+                await count_msg.edit_text(f"Принудительно скопировано {counter} / {len(error_items)} товаров")
             else:
                 await message.answer(f"{offer_id} не найден")
         except Exception as ex:
-            await message.answer(f"{offer_id} error: {ex.__traceback__.tb_frame} {ex.__traceback__.tb_lineno}")
+            await message.answer(f"{offer_id} error: {ex}")
 
     os.remove(file_name)
     await state.set_state(AdminFSM.home)

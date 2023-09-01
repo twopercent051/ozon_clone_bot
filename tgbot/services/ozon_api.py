@@ -57,18 +57,29 @@ class OzonAPI:
         data = json.dumps(data)
         result = await self.__request(url=url, data=data, ozon_token=ozon_token, client_id=client_id)
         items_result = result["result"]["items"]
+        print(items_result)
         errors = []
         for item in items_result:
-            if len(item["errors"]) > 0:
-                errors.append(dict(offer_id=item["offer_id"], error=item["errors"][0]["code"]))
+            if len(item["errors"]) > 0 and item["product_id"] != 0:
+                errors.append(dict(offer_id=item["offer_id"],
+                                   product_id=item["product_id"],
+                                   error=item["errors"][0]["code"]))
         return errors
 
-    async def delete_cards(self, item_list: list, ozon_token: str, client_id: int):
-        url = "https://api-seller.ozon.ru/v2/products/delete"
-        item_chunks = await self.__paginator(item_list=item_list, size=500)
-        for chunk in item_chunks:
+    async def delete_cards(self, archive_item_list: list, delete_item_list: list, ozon_token: str, client_id: int):
+        delete_url = "https://api-seller.ozon.ru/v2/products/delete"
+        archive_url = "https://api-seller.ozon.ru/v1/product/archive"
+        archive_item_chunks = await self.__paginator(item_list=archive_item_list, size=100)
+        delete_item_chunks = await self.__paginator(item_list=delete_item_list, size=300)
+        for chunk in archive_item_chunks:
             data = dict(product_id=list(chunk))
-            await self.__request(url=url, data=data, ozon_token=ozon_token, client_id=client_id)
+            data = json.dumps(data)
+            a = await self.__request(url=archive_url, data=data, ozon_token=ozon_token, client_id=client_id)
+        await asyncio.sleep(1)
+        for chunk in delete_item_chunks:
+            data = dict(products=list(chunk))
+            data = json.dumps(data, ensure_ascii=False)
+            b = await self.__request(url=delete_url, data=data, ozon_token=ozon_token, client_id=client_id)
             await asyncio.sleep(1)
 
     async def get_card_attrs(self, offer_id: str, ozon_token: str, client_id: int) -> dict:
