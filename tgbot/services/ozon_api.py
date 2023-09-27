@@ -38,12 +38,15 @@ class OzonAPI:
         url = "https://api-seller.ozon.ru/v1/product/import-by-sku"
         items = []
         for item in item_list:
+            if item["outer_source"] == "orecht":
+                offer_id = f"РСВ-{item['art']}РСВ-{item['art']}"
+            else:
+                offer_id = f"УНАС-{item['art']}"
             item_dict = dict(sku=item["sku"],
-                             offer_id=f"РСВ-{item['art']}РСВ-{item['art']}",
+                             offer_id=offer_id,
                              currency_code="RUB",
                              old_price=str(2000),
                              price=str(2000),
-                             # price=str(item["price"] * 2),
                              vat="0")
             items.append(item_dict)
         data = dict(items=items)
@@ -89,7 +92,7 @@ class OzonAPI:
         result = await self.__request(url=url, data=data, ozon_token=ozon_token, client_id=client_id)
         return result
 
-    async def create_card(self, income_data: dict, image: str, price: int, ozon_token: str, client_id: int):
+    async def create_card(self, income_data: dict, images: List[str], price: int, ozon_token: str, client_id: int):
         url = "https://api-seller.ozon.ru/v2/product/import"
         try:
             item_data = income_data["result"][0]
@@ -112,7 +115,7 @@ class OzonAPI:
                                 depth=item_data["depth"],
                                 dimension_unit=item_data["dimension_unit"],
                                 height=item_data["height"],
-                                images=[image],
+                                images=images,
                                 name=item_data["name"],
                                 offer_id=item_data["offer_id"],
                                 old_price=str(price),

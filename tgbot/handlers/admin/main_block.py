@@ -92,7 +92,7 @@ async def main_block(message: Message, state: FSMContext):
     item_list = []
     for row in file_data:
         if row:
-            item = dict(sku=int(row[0]), art=row[1])
+            item = dict(sku=int(row["ozon_id"]), art=row["outer_id"], outer_source=row["outer_source"])
             item_list.append(item)
     task_id = await ozon_api.clone_card(item_list=item_list, ozon_token=ozon_token, client_id=client_id)
     await message.answer(f"ID задачи {hcode(task_id)}\nПроверяем результаты клонирования ⏳")
@@ -114,18 +114,22 @@ async def main_block(message: Message, state: FSMContext):
         offer_id = item["offer_id"]
         product_id = item["product_id"]
         try:
-            oreht_data = await get_card_info(item_art=offer_id.split("-")[-1])
-            if not oreht_data:
-                await message.answer("Неправильная ссылка в Oreht")
-                continue
             card_attrs = await ozon_api.get_card_attrs(offer_id=offer_id, ozon_token=ozon_token, client_id=client_id)
             time.sleep(9)
             await ozon_api.delete_cards(ozon_token=ozon_token,
                                         client_id=client_id,
                                         archive_item_list=[product_id],
                                         delete_item_list=[{"offer_id": offer_id}])
+            if offer_id.split("-")[0] == "РСВ":
+                oreht_data = await get_card_info(item_art=offer_id.split("-")[-1])
+                if not oreht_data:
+                    await message.answer("Неправильная ссылка в Oreht")
+                    continue
+                images = [oreht_data["image"]]
+            else:
+                images = [i["file_name"] for i in card_attrs["result"][0]["images"]]
             result = await ozon_api.create_card(income_data=card_attrs,
-                                                image=oreht_data["image"],
+                                                images=images,
                                                 price=str(2000),
                                                 ozon_token=ozon_token,
                                                 client_id=client_id)
