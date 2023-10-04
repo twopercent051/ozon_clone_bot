@@ -19,7 +19,6 @@ async def xlsx_parser(file: str):
                 outer_source = "unas"
             if outer_id and outer_source:
                 item_dict = dict(ozon_id=ozon_id, ozon_url=ozon_url, outer_id=outer_id, outer_source=outer_source)
-                result.append((ozon_id, outer_id, ozon_url))
                 result.append(item_dict)
         except (AttributeError, Exception):
             result.append(None)
