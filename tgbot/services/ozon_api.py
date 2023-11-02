@@ -6,44 +6,37 @@ from typing import List
 import aiohttp
 
 from create_bot import config
-
-
-# ozon_token = config.misc.ozon_token
-# ozon_client_id = config.misc.ozon_client_id
+from tgbot.services.excel import ExcelItem
 
 
 class OzonAPI:
 
     def __init__(self):
-        pass
+        self.ozon_token = config.misc.ozon_token
+        self.client_id = config.misc.ozon_client_id
 
     @staticmethod
     async def __paginator(item_list: list, size: int) -> List[tuple]:
         it = iter(item_list)
         return iter(lambda: tuple(itertools.islice(it, size)), ())
 
-    @staticmethod
-    async def __request(url: str, data: dict, ozon_token: str, client_id: int):
+    async def __request(self, url: str, data: dict):
         headers = {
             'Content-Type': 'application/json',
             "Host": "api-seller.ozon.ru",
-            "Api-Key": ozon_token,
-            "Client-Id": client_id
+            "Api-Key": self.ozon_token,
+            "Client-Id": self.client_id
         }
         async with aiohttp.ClientSession() as session:
             async with session.post(url=url, headers=headers, data=data) as resp:
                 return await resp.json()
 
-    async def clone_card(self, item_list: list, ozon_token: str, client_id: int) -> list:
+    async def clone_card(self, item_list: List[ExcelItem]) -> list:
         url = "https://api-seller.ozon.ru/v1/product/import-by-sku"
         items = []
         for item in item_list:
-            if item["outer_source"] == "orecht":
-                offer_id = f"РСВ-{item['art']}РСВ-{item['art']}"
-            else:
-                offer_id = f"УНАС-{item['art']}"
-            item_dict = dict(sku=item["sku"],
-                             offer_id=offer_id,
+            item_dict = dict(sku=item.ozon_id,
+                             offer_id=item.article,
                              currency_code="RUB",
                              old_price=str(2000),
                              price=str(2000),
@@ -51,14 +44,14 @@ class OzonAPI:
             items.append(item_dict)
         data = dict(items=items)
         data = json.dumps(data)
-        task = await self.__request(url=url, data=data, ozon_token=ozon_token, client_id=client_id)
+        task = await self.__request(url=url, data=data)
         return task["result"]["task_id"]
 
-    async def clone_status(self, task_id: int, ozon_token: str, client_id: int) -> dict:
+    async def clone_status(self, task_id: int) -> dict:
         url = "https://api-seller.ozon.ru/v1/product/import/info"
         data = dict(task_id=task_id)
         data = json.dumps(data)
-        result = await self.__request(url=url, data=data, ozon_token=ozon_token, client_id=client_id)
+        result = await self.__request(url=url, data=data)
         items_result = result["result"]["items"]
         print(items_result)
         errors = []
@@ -69,7 +62,7 @@ class OzonAPI:
                                    error=item["errors"][0]["code"]))
         return errors
 
-    async def delete_cards(self, archive_item_list: list, delete_item_list: list, ozon_token: str, client_id: int):
+    async def delete_cards(self, archive_item_list: list, delete_item_list: list):
         delete_url = "https://api-seller.ozon.ru/v2/products/delete"
         archive_url = "https://api-seller.ozon.ru/v1/product/archive"
         archive_item_chunks = await self.__paginator(item_list=archive_item_list, size=100)
@@ -77,22 +70,22 @@ class OzonAPI:
         for chunk in archive_item_chunks:
             data = dict(product_id=list(chunk))
             data = json.dumps(data)
-            a = await self.__request(url=archive_url, data=data, ozon_token=ozon_token, client_id=client_id)
+            a = await self.__request(url=archive_url, data=data)
         await asyncio.sleep(1)
         for chunk in delete_item_chunks:
             data = dict(products=list(chunk))
             data = json.dumps(data, ensure_ascii=False)
-            b = await self.__request(url=delete_url, data=data, ozon_token=ozon_token, client_id=client_id)
+            b = await self.__request(url=delete_url, data=data)
             await asyncio.sleep(1)
 
-    async def get_card_attrs(self, offer_id: str, ozon_token: str, client_id: int) -> dict:
+    async def get_card_attrs(self, offer_id: str) -> dict:
         url = "https://api-seller.ozon.ru/v3/products/info/attributes"
         data = dict(filter=dict(offer_id=[offer_id], visibility="ALL"), limit=100)
         data = json.dumps(data)
-        result = await self.__request(url=url, data=data, ozon_token=ozon_token, client_id=client_id)
+        result = await self.__request(url=url, data=data)
         return result
 
-    async def create_card(self, income_data: dict, images: List[str], price: int, ozon_token: str, client_id: int):
+    async def create_card(self, income_data: dict, images: List[str], price: int):
         url = "https://api-seller.ozon.ru/v2/product/import"
         try:
             item_data = income_data["result"][0]
@@ -125,4 +118,4 @@ class OzonAPI:
                                 weight_unit=item_data["weight_unit"],
                                 width=item_data["width"])])
         data = json.dumps(data)
-        return await self.__request(url=url, data=data, ozon_token=ozon_token, client_id=client_id)
+        return await self.__request(url=url, data=data)

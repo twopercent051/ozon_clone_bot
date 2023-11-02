@@ -1,7 +1,16 @@
+from typing import List
+
 from openpyxl.reader.excel import load_workbook
+from pydantic import BaseModel
 
 
-async def xlsx_parser(file: str):
+class ExcelItem(BaseModel):
+    ozon_id: int
+    ozon_url: str
+    article: str
+
+
+async def xlsx_parser(file: str) -> List[ExcelItem]:
     wb = load_workbook(filename=file)
     sh = wb.active
     result = []
@@ -9,17 +18,9 @@ async def xlsx_parser(file: str):
         try:
             ozon_id = row[0].value.split("/")[4].split("-")[-1]
             ozon_url = row[0].value
-            outer_id = None
-            outer_source = None
-            if "oreht.ru" in row[1].value.split("/")[2]:
-                outer_id = row[1].value.split("=")[-1]
-                outer_source = "orecht"
-            if "unas.ru" in row[1].value.split("/")[2]:
-                outer_id = row[1].value.split("/")[-2]
-                outer_source = "unas"
-            if outer_id and outer_source:
-                item_dict = dict(ozon_id=ozon_id, ozon_url=ozon_url, outer_id=outer_id, outer_source=outer_source)
-                result.append(item_dict)
+            article = row[1].value
+            item = ExcelItem(ozon_id=ozon_id, ozon_url=ozon_url, article=article)
+            result.append(item)
         except (AttributeError, Exception):
             result.append(None)
     return result

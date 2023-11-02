@@ -30,8 +30,6 @@ class TgBot:
 class Miscellaneous:
     ozon_token: str
     ozon_client_id: str
-    orecht_login: str
-    orecht_pass: str
 
 
 @dataclass
@@ -67,7 +65,5 @@ def load_config(path: str = None):
         misc=Miscellaneous(
             ozon_token=env.str("OZON_TOKEN"),
             ozon_client_id=env.str("OZON_CLIENT_ID"),
-            orecht_login=env.str("ORECHT_LOGIN"),
-            orecht_pass=env.str("ORECHT_PASS"),
         )
     )
