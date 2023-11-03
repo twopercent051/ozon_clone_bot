@@ -26,12 +26,12 @@ admin_group = config.tg_bot.admin_group
 
 
 @router.message(Command("clone_ozon"))
-async def main_block(callback: CallbackQuery, state: FSMContext):
+async def main_block(message: Message, state: FSMContext):
     file_name = f'{os.getcwd()}/template.xlsx'
     file = FSInputFile(path=file_name, filename=file_name)
     text = "Заполните шаблон ссылками и загрузите в бот"
     await state.set_state(AdminFSM.get_data)
-    await callback.message.answer_document(document=file, caption=text)
+    await message.answer_document(document=file, caption=text)
 
 
 @router.message(F.document, AdminFSM.get_data)
