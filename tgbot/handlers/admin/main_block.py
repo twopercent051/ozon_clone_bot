@@ -25,36 +25,13 @@ ozon_api = OzonAPI()
 admin_group = config.tg_bot.admin_group
 
 
-async def main_screen_render(start: bool):
-    if start:
-        text = "Это главный экран бота. Чтобы скопировать карточки товаров, нажмите на клавишу нижу 👇"
-    else:
-        text = "ГЛАВНОЕ МЕНЮ"
-    kb = inline.main_menu_kb()
-    await bot.send_message(chat_id=admin_group, text=text, reply_markup=kb)
-
-
-@router.message(Command("start"))
-async def main_block(message: Message, state: FSMContext):
-    await state.set_state(AdminFSM.home)
-    await main_screen_render(start=True)
-
-
-@router.callback_query(F.data == "home")
-async def main_block(callback: CallbackQuery, state: FSMContext):
-    await state.set_state(AdminFSM.home)
-    await main_screen_render(start=False)
-    await bot.answer_callback_query(callback.id)
-
-
-@router.callback_query(F.data == "clone")
+@router.message(Command("clone_ozon"))
 async def main_block(callback: CallbackQuery, state: FSMContext):
     file_name = f'{os.getcwd()}/template.xlsx'
     file = FSInputFile(path=file_name, filename=file_name)
     text = "Заполните шаблон ссылками и загрузите в бот"
-    kb = inline.home_kb()
     await state.set_state(AdminFSM.get_data)
-    await callback.message.answer_document(document=file, caption=text, reply_markup=kb)
+    await callback.message.answer_document(document=file, caption=text)
 
 
 @router.message(F.document, AdminFSM.get_data)
@@ -70,14 +47,13 @@ async def main_block(message: Message, state: FSMContext):
     await message.answer(f"ID задачи {hcode(task_id)}\nПроверяем результаты клонирования ⏳")
     await asyncio.sleep(30)
     clone_result = await ozon_api.clone_status(task_id=task_id)
-    kb = inline.home_kb()
     await asyncio.sleep(1)
     if len(clone_result) > 0:
         text = f"{len(clone_result)} / {len(file_data)} товаров скопированы с ошибками. Запускается " \
                f"парсер\n<u>Внимание! процесс может занять длительное время. Пожалуйста, не прерывайте работу бота</u>"
         await message.answer(text)
     else:
-        await message.answer("✅ Все товары скопированы", reply_markup=kb)
+        await message.answer("✅ Все товары скопированы")
         return
     error_items = [dict(offer_id=i["offer_id"], product_id=i["product_id"]) for i in clone_result]
     count_msg = await message.answer(f"Принудительно скопировано 0 / {len(error_items)} товаров")
@@ -101,4 +77,4 @@ async def main_block(message: Message, state: FSMContext):
     os.remove(file_name)
     await state.set_state(AdminFSM.home)
     text = "✅ Цикл завершён"
-    await message.answer(text, reply_markup=kb)
+    await message.answer(text)
