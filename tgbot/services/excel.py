@@ -18,8 +18,8 @@ async def xlsx_parser(file: str) -> List[ExcelItem]:
     result = []
     for row in sh.iter_rows(min_row=2):
         try:
-            logger.error(row[0].value)
-            ozon_id = row[0].value.split("/")[4].split("-")[-1]
+            # ozon_id = row[0].value.split("/")[4].split("-")[-1]
+            ozon_id = row[0].value.split("/")[4]
             # ozon_id = row[0].value
             article = row[1].value
             item = ExcelItem(ozon_id=ozon_id, article=article)
