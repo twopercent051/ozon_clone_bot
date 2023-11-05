@@ -8,7 +8,7 @@ from create_bot import logger
 
 class ExcelItem(BaseModel):
     ozon_id: int | str
-    ozon_url: str
+    # ozon_url: str
     article: str
 
 
