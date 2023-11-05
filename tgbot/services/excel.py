@@ -7,7 +7,7 @@ from create_bot import logger
 
 
 class ExcelItem(BaseModel):
-    ozon_id: int
+    ozon_id: int | str
     ozon_url: str
     article: str
 
@@ -25,5 +25,5 @@ async def xlsx_parser(file: str) -> List[ExcelItem]:
             result.append(item)
         except Exception as ex:
             logger.warning(ex)
-            return
+            result.append(None)
     return result

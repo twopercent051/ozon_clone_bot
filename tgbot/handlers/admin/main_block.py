@@ -73,7 +73,7 @@ async def main_block(message: Message, state: FSMContext):
             time.sleep(9)
             await ozon_api.delete_cards(archive_item=[product_id], delete_item=[{"offer_id": offer_id}])
             images = [i["file_name"] for i in card_attrs["result"][0]["images"]]
-            result = await ozon_api.create_card(income_data=card_attrs, images=images, price=str(2000))
+            await ozon_api.create_card(income_data=card_attrs, images=images, price=str(2000))
             counter += 1
             await count_msg.edit_text(f"Принудительно скопировано {counter} / {len(error_items)} товаров")
         except Exception as ex:
