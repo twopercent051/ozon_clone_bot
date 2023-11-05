@@ -23,7 +23,8 @@ async def xlsx_parser(file: str) -> List[dict]:
             ozon_id = row[0].value
             article = row[1].value
             item = dict(ozon_id=ozon_id, article=article)
-            result.append(item)
+            if ozon_id and article:
+                result.append(item)
         except Exception as ex:
             logger.warning(ex)
             result.append(None)
