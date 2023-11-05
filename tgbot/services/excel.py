@@ -17,6 +17,8 @@ async def xlsx_parser(file: str) -> List[ExcelItem]:
     sh = wb.active
     result = []
     for row in sh.iter_rows(min_row=2):
+        ozon_id = row[0].value.split("/")[4].split("-")[-1]
+        logger.warning(ozon_id)
         try:
             # ozon_id = row[0].value.split("/")[4].split("-")[-1]
             ozon_id = row[0].value.split("/")[4]
