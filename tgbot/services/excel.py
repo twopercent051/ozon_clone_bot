@@ -6,13 +6,13 @@ from pydantic import BaseModel
 from create_bot import logger
 
 
-class ExcelItem(BaseModel):
-    ozon_id: int | str
-    # ozon_url: str
-    article: str
+# class ExcelItem(BaseModel):
+#     ozon_id: int | str
+#     # ozon_url: str
+#     article: str
 
 
-async def xlsx_parser(file: str) -> List[ExcelItem]:
+async def xlsx_parser(file: str) -> List[dict]:
     wb = load_workbook(filename=file)
     sh = wb.active
     result = []
@@ -22,7 +22,7 @@ async def xlsx_parser(file: str) -> List[ExcelItem]:
             # ozon_id = row[0].value.split("/")[4]
             ozon_id = row[0].value
             article = row[1].value
-            item = ExcelItem(ozon_id=ozon_id, article=article)
+            item = dict(ozon_id=ozon_id, article=article)
             result.append(item)
         except Exception as ex:
             logger.warning(ex)

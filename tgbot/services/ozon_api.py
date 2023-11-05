@@ -6,7 +6,6 @@ from typing import List
 import aiohttp
 
 from create_bot import config
-from tgbot.services.excel import ExcelItem
 
 
 class OzonAPI:
@@ -31,14 +30,14 @@ class OzonAPI:
             async with session.post(url=url, headers=headers, data=data) as resp:
                 return await resp.json()
 
-    async def clone_card(self, item_list: List[ExcelItem]) -> list:
+    async def clone_card(self, item_list: List[dict]) -> list:
         url = "https://api-seller.ozon.ru/v1/product/import-by-sku"
         items = []
         for item in item_list:
             if not item:
                 return
-            item_dict = dict(sku=item.ozon_id,
-                             offer_id=item.article,
+            item_dict = dict(sku=item["ozon_id"],
+                             offer_id=item["article"],
                              currency_code="RUB",
                              old_price=str(2000),
                              price=str(2000),
