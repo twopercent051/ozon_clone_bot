@@ -3,6 +3,8 @@ from typing import List
 from openpyxl.reader.excel import load_workbook
 from pydantic import BaseModel
 
+from create_bot import logger
+
 
 class ExcelItem(BaseModel):
     ozon_id: int
@@ -17,10 +19,11 @@ async def xlsx_parser(file: str) -> List[ExcelItem]:
     for row in sh.iter_rows(min_row=2):
         try:
             ozon_id = row[0].value.split("/")[4].split("-")[-1]
-            ozon_url = row[0].value
+            # ozon_id = row[0].value
             article = row[1].value
-            item = ExcelItem(ozon_id=ozon_id, ozon_url=ozon_url, article=article)
+            item = ExcelItem(ozon_id=ozon_id, article=article)
             result.append(item)
-        except (AttributeError, Exception):
-            result.append(None)
+        except Exception as ex:
+            logger.warning(ex)
+            return
     return result

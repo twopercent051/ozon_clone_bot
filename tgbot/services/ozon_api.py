@@ -16,7 +16,7 @@ class OzonAPI:
         self.client_id = config.misc.ozon_client_id
 
     @staticmethod
-    async def __paginator(item_list: list, size: int) -> List[tuple]:
+    async def paginator(item_list: list, size: int) -> List[tuple]:
         it = iter(item_list)
         return iter(lambda: tuple(itertools.islice(it, size)), ())
 
@@ -35,6 +35,8 @@ class OzonAPI:
         url = "https://api-seller.ozon.ru/v1/product/import-by-sku"
         items = []
         for item in item_list:
+            if not item:
+                return
             item_dict = dict(sku=item.ozon_id,
                              offer_id=item.article,
                              currency_code="RUB",
@@ -56,27 +58,25 @@ class OzonAPI:
         print(items_result)
         errors = []
         for item in items_result:
-            if len(item["errors"]) > 0 and item["product_id"] != 0:
+            if len(item["errors"]) > 0:
                 errors.append(dict(offer_id=item["offer_id"],
                                    product_id=item["product_id"],
                                    error=item["errors"][0]["code"]))
         return errors
 
-    async def delete_cards(self, archive_item_list: list, delete_item_list: list):
+    async def delete_cards(self, archive_item: list, delete_item: list):
         delete_url = "https://api-seller.ozon.ru/v2/products/delete"
         archive_url = "https://api-seller.ozon.ru/v1/product/archive"
-        archive_item_chunks = await self.__paginator(item_list=archive_item_list, size=100)
-        delete_item_chunks = await self.__paginator(item_list=delete_item_list, size=300)
-        for chunk in archive_item_chunks:
-            data = dict(product_id=list(chunk))
-            data = json.dumps(data)
-            a = await self.__request(url=archive_url, data=data)
+        data = dict(product_id=archive_item)
+        data = json.dumps(data)
+        a = await self.__request(url=archive_url, data=data)
         await asyncio.sleep(1)
-        for chunk in delete_item_chunks:
-            data = dict(products=list(chunk))
-            data = json.dumps(data, ensure_ascii=False)
-            b = await self.__request(url=delete_url, data=data)
-            await asyncio.sleep(1)
+        data = dict(products=delete_item)
+        data = json.dumps(data, ensure_ascii=False)
+        b = await self.__request(url=delete_url, data=data)
+        if not b["status"][0]["is_deleted"]:
+            return True
+        await asyncio.sleep(1)
 
     async def get_card_attrs(self, offer_id: str) -> dict:
         url = "https://api-seller.ozon.ru/v3/products/info/attributes"
